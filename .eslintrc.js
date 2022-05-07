@@ -17,7 +17,8 @@ module.exports = {
     'vue/max-attributes-per-line': [
       2,
       {
-        singleline: 10,
+        // 单行时可以接收最大数量
+        singleline: 15,
         multiline: {
           max: 1,
           allowFirstLine: false
@@ -77,8 +78,11 @@ module.exports = {
       2,
       {
         SwitchCase: 1
+        // 指定是否需要缩进嵌套在其他三元表达式中的三元表达式
+        // flatTernaryExpressions: false
       }
     ],
+
     'jsx-quotes': [2, 'prefer-single'],
     'key-spacing': [
       2,
@@ -263,13 +267,7 @@ module.exports = {
     yoda: [2, 'never'],
     'prefer-const': 2,
     'no-debugger': process.env.NODE_ENV === 'production' ? 2 : 0,
-    'object-curly-spacing': [
-      2,
-      'always',
-      {
-        objectsInObjects: false
-      }
-    ],
+    'object-curly-spacing': [2, 'always'],
     'array-bracket-spacing': [2, 'never']
   }
 }

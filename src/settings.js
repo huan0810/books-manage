@@ -11,13 +11,13 @@ module.exports = {
    * @type {boolean} true | false
    * @description Whether need tagsView
    */
-  tagsView: true,
+  tagsView: true, // 上方是否展示打开的页面
 
   /**
    * @type {boolean} true | false
    * @description Whether fix the header
    */
-  fixedHeader: true, // 头部组件是否固定
+  fixedHeader: false, // 头部组件是否固定
 
   /**
    * @type {boolean} true | false

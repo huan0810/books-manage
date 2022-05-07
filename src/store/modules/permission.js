@@ -7,8 +7,10 @@ import { asyncRoutes, constantRoutes } from '@/router'
  */
 function hasPermission(roles, route) {
   if (route.meta && route.meta.roles) {
-    return roles.some(role => route.meta.roles.includes(role))
+    return roles.some((role) => route.meta.roles.includes(role))
   } else {
+    // 路由规则里没有配置meta元信息，或者元信息里面没有roles，那就认为所有用户对此路由都有访问权限
+    // 没有配置哪些人可以访问，就认为所有人都可以访问，返回true
     return true
   }
 }
@@ -21,7 +23,7 @@ function hasPermission(roles, route) {
 export function filterAsyncRoutes(routes, roles) {
   const res = []
 
-  routes.forEach(route => {
+  routes.forEach((route) => {
     const tmp = { ...route }
     if (hasPermission(roles, tmp)) {
       if (tmp.children) {
@@ -48,8 +50,9 @@ const mutations = {
 
 const actions = {
   generateRoutes({ commit }, roles) {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       let accessedRoutes
+      // 只要有admin权限，asyncRoutes直接与constantRoutes路由合并
       if (roles.includes('admin')) {
         accessedRoutes = asyncRoutes || []
       } else {
