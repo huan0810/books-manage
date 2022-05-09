@@ -1,6 +1,7 @@
 <template>
   <!-- :model="postForm"绑定整个表单的数据信息 -->
-  <el-form ref="postForm" :model="postForm">
+  <!-- :rules="rules"绑定表单的校验规则 -->
+  <el-form ref="postForm" :model="postForm" :rules="rules">
     <!-- sticky实现吸顶效果 -->
     <sticky :class-name="'sub-navbar'">
       <el-button v-if="!isEdit" @click="showGuide">显示帮助</el-button>
@@ -19,6 +20,7 @@
           <ebook-upload :file-list="fileList" :disabled="isEdit" @onSuccess="onUploadSuccess" @onRemove="onUploadRemove" />
         </el-col>
         <el-col :span="24">
+          <!-- prop="title"绑定校验规则rules中的title校验项 -->
           <el-form-item prop="title">
             <md-input v-model="postForm.title" :maxlength="100" name="name" required>
               书名
@@ -26,55 +28,55 @@
           </el-form-item>
           <el-row>
             <el-col :span="12">
-              <el-form-item label="作者：" :label-width="labelWidth">
+              <el-form-item prop="author" label="作者：" :label-width="labelWidth">
                 <el-input v-model="postForm.author" placeholder="作者" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="出版社：" :label-width="labelWidth">
+              <el-form-item prop="publisher" label="出版社：" :label-width="labelWidth">
                 <el-input v-model="postForm.publisher" placeholder="出版社" />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row>
             <el-col :span="12">
-              <el-form-item label="语言：" :label-width="labelWidth">
+              <el-form-item prop="language" label="语言：" :label-width="labelWidth">
                 <el-input v-model="postForm.language" placeholder="语言" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="根文件：" :label-width="labelWidth">
+              <el-form-item prop="rootFile" label="根文件：" :label-width="labelWidth">
                 <el-input v-model="postForm.rootFile" placeholder="根文件" disabled />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row>
             <el-col :span="12">
-              <el-form-item label="文件路径：" :label-width="labelWidth">
+              <el-form-item prop="filePath" label="文件路径：" :label-width="labelWidth">
                 <el-input v-model="postForm.filePath" placeholder="文件路径" disabled />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="解压路径：" :label-width="labelWidth">
+              <el-form-item prop="unzipPath" label="解压路径：" :label-width="labelWidth">
                 <el-input v-model="postForm.unzipPath" placeholder="解压路径" disabled />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row>
             <el-col :span="12">
-              <el-form-item label="封面路径：" :label-width="labelWidth">
-                <el-input v-model="postForm.filePath" placeholder="封面路径" disabled />
+              <el-form-item prop="coverPath" label="封面路径：" :label-width="labelWidth">
+                <el-input v-model="postForm.coverPath" placeholder="封面路径" disabled />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="文件名称：" :label-width="labelWidth">
-                <el-input v-model="postForm.unzipPath" placeholder="文件名称" disabled />
+              <el-form-item prop="originalName" label="文件名称：" :label-width="labelWidth">
+                <el-input v-model="postForm.originalName" placeholder="文件名称" disabled />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row>
             <el-col :span="24">
-              <el-form-item label="封面：" :label-width="labelWidth">
+              <el-form-item prop="cover" label="封面：" :label-width="labelWidth">
                 <!-- a标签的作用是点击显示大图 -->
                 <a v-if="postForm.cover" :href="postForm.cover" target="_blank">
                   <img :src="postForm.cover" class="preview-img">
@@ -88,7 +90,7 @@
             <el-col :span="24">
               <el-form-item label="目录：" :label-width="labelWidth">
                 <div v-if="postForm.contents && postForm.contents.length > 0" class="contents-wrapper">
-                  <el-tree />
+                  <el-tree :data="contentsTree" @node-click="onContentClick" />
                 </div>
                 <span v-else>无</span>
               </el-form-item>
@@ -105,6 +107,15 @@ import Sticky from '../../../components/Sticky'
 import Warning from './Warning'
 import EbookUpload from '../../../components/EbookUpload'
 import MdInput from '../../../components/MDinput'
+import { createBook } from '../../../api/book'
+
+// 字段英文映射为中文
+const fields = {
+  title: '书名',
+  author: '作者',
+  publisher: '出版社',
+  language: '语言'
+}
 
 export default {
   components: { Sticky, Warning, EbookUpload, MdInput },
@@ -113,31 +124,118 @@ export default {
     isEdit: Boolean
   },
   data() {
+    const validateRequire = (rule, value, callback) => {
+      // console.log(rule, value)
+      if (value.length === 0) {
+        callback(new Error(fields[rule.field] + '必须填写'))
+      } else {
+        callback()
+      }
+    }
     return {
       loading: false,
-      postForm: {
-        ebook_uri: ''
-      },
+      postForm: {},
       fileList: [],
-      labelWidth: '120px'
+      labelWidth: '120px',
+      contentsTree: [],
+      rules: {
+        title: [{ validator: validateRequire }],
+        author: [{ validator: validateRequire }],
+        publisher: [{ validator: validateRequire }],
+        language: [{ validator: validateRequire }]
+      }
     }
   },
   methods: {
-    onUploadSuccess() {
-      console.log('onUploadSuccess')
+    onContentClick(data) {
+      // console.log(data)
+      window.open(data.text)
+    },
+    setData(data) {
+      // 更新postForm表单数据
+      const { title, author, publisher, language, rootFile, cover, url, originalName, contents, contentsTree, fileName, coverPath, filePath, unzipPath } = data
+      this.postForm = {
+        ...this.postForm,
+        title,
+        author,
+        publisher,
+        language,
+        rootFile,
+        cover,
+        url,
+        originalName,
+        contents,
+        contentsTree,
+        fileName,
+        coverPath,
+        filePath,
+        unzipPath
+      }
+      // 把contentsTree赋值给data数据中
+      this.contentsTree = contentsTree
+    },
+    // 上传成功后，表单项还原为默认值
+    setDefault() {
+      // this.postForm = Object.assign({}, defaultForm)
+      this.contentsTree = []
+      this.fileList = []
+      // resetFields()将整个表单重置为初始值，并移除校验结果。这需要每个表单都绑定prop
+      this.$refs.postForm.resetFields()
+    },
+    onUploadSuccess(data) {
+      // console.log('onUploadSuccess', data)
+      this.setData(data)
     },
     onUploadRemove() {
-      console.log('onUploadRemove')
+      // console.log('onUploadRemove')
+      // 将表单值还原为默认值
+      this.setDefault()
     },
     submitForm() {
+      // if (!this.loading) {
       // 提交表单，将电子书内容保存到数据库
       this.loading = true // 模拟加载等待
-      setTimeout(() => {
-        this.loading = false
-      }, 1000)
+      // this.$refs.postForm拿到模板里的表单,提交前进行表单规则校验
+      this.$refs.postForm.validate((valid, fields) => {
+        // console.log(valid, fields)
+        if (valid) {
+          // valid为true表示通过验证
+          // 对表单项postForm做一个浅拷贝，删除无用项，不用向服务器传递冗余数据
+          const book = Object.assign({}, this.postForm)
+          delete book.contents
+          delete book.contentsTree
+          if (!this.isEdit) {
+            // 新增图书
+            createBook(book)
+              .then(response => {
+                const { msg } = response
+                this.$notify({
+                  title: '操作成功',
+                  message: msg,
+                  type: 'success',
+                  duration: 2000
+                })
+                this.loading = false
+                this.setDefault()
+              })
+              .catch(() => {
+                this.loading = false
+              })
+          } else {
+            // 更新图书
+            // updateBook(book)
+          }
+        } else {
+          // 验证失败，弹出错误信息
+          const message = fields[Object.keys(fields)[0]][0].message
+          this.$message({ message, type: 'error' })
+          this.loading = false
+        }
+      })
+      // }
     },
     showGuide() {
-      console.log('show fuide')
+      // console.log('show fuide')
     }
   }
 }
