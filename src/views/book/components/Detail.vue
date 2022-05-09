@@ -89,7 +89,7 @@
           <el-row>
             <el-col :span="24">
               <el-form-item label="目录：" :label-width="labelWidth">
-                <div v-if="postForm.contents && postForm.contents.length > 0" class="contents-wrapper">
+                <div v-if="contentsTree && contentsTree.length > 0" class="contents-wrapper">
                   <el-tree :data="contentsTree" @node-click="onContentClick" />
                 </div>
                 <span v-else>无</span>
@@ -107,7 +107,7 @@ import Sticky from '../../../components/Sticky'
 import Warning from './Warning'
 import EbookUpload from '../../../components/EbookUpload'
 import MdInput from '../../../components/MDinput'
-import { createBook } from '../../../api/book'
+import { createBook, getBook, updateBook } from '../../../api/book'
 
 // 字段英文映射为中文
 const fields = {
@@ -146,7 +146,20 @@ export default {
       }
     }
   },
+  created() {
+    if (this.isEdit) {
+      // 编辑模式时，要拿到fileName，知道编辑哪本书
+      const fileName = this.$route.params.fileName
+      this.getBookData(fileName)
+    }
+  },
   methods: {
+    getBookData(fileName) {
+      // 调接口，获取电子书信息
+      getBook(fileName).then(response => {
+        this.setData(response.data)
+      })
+    },
     onContentClick(data) {
       // console.log(data)
       window.open(data.text)
@@ -173,6 +186,8 @@ export default {
       }
       // 把contentsTree赋值给data数据中
       this.contentsTree = contentsTree
+      // 新数据书名是originalName，旧数据书名是fileName
+      this.fileList = [{ name: originalName || fileName, url }]
     },
     // 上传成功后，表单项还原为默认值
     setDefault() {
@@ -192,47 +207,55 @@ export default {
       this.setDefault()
     },
     submitForm() {
-      // if (!this.loading) {
-      // 提交表单，将电子书内容保存到数据库
-      this.loading = true // 模拟加载等待
-      // this.$refs.postForm拿到模板里的表单,提交前进行表单规则校验
-      this.$refs.postForm.validate((valid, fields) => {
-        // console.log(valid, fields)
-        if (valid) {
-          // valid为true表示通过验证
-          // 对表单项postForm做一个浅拷贝，删除无用项，不用向服务器传递冗余数据
-          const book = Object.assign({}, this.postForm)
-          delete book.contents
-          delete book.contentsTree
-          if (!this.isEdit) {
-            // 新增图书
-            createBook(book)
-              .then(response => {
-                const { msg } = response
-                this.$notify({
-                  title: '操作成功',
-                  message: msg,
-                  type: 'success',
-                  duration: 2000
+      const onSuccess = response => {
+        const { msg } = response
+        this.$notify({
+          title: '操作成功',
+          message: msg,
+          type: 'success',
+          duration: 2000
+        })
+        this.loading = false
+      }
+      if (!this.loading) {
+        // 提交表单，将电子书内容保存到数据库
+        this.loading = true // 模拟加载等待
+        // this.$refs.postForm拿到模板里的表单,提交前进行表单规则校验
+        this.$refs.postForm.validate((valid, fields) => {
+          // console.log(valid, fields)
+          if (valid) {
+            // valid为true表示通过验证
+            // 对表单项postForm做一个浅拷贝，删除无用项，不用向服务器传递冗余数据
+            const book = Object.assign({}, this.postForm)
+            delete book.contentsTree
+            if (!this.isEdit) {
+              // 新增图书
+              createBook(book)
+                .then(response => {
+                  onSuccess(response)
+                  this.setDefault()
                 })
-                this.loading = false
-                this.setDefault()
-              })
-              .catch(() => {
-                this.loading = false
-              })
+                .catch(() => {
+                  this.loading = false
+                })
+            } else {
+              // 更新(编辑)图书
+              updateBook(book)
+                .then(response => {
+                  onSuccess(response)
+                })
+                .catch(() => {
+                  this.loading = false
+                })
+            }
           } else {
-            // 更新图书
-            // updateBook(book)
+            // 验证失败，弹出错误信息
+            const message = fields[Object.keys(fields)[0]][0].message
+            this.$message({ message, type: 'error' })
+            this.loading = false
           }
-        } else {
-          // 验证失败，弹出错误信息
-          const message = fields[Object.keys(fields)[0]][0].message
-          this.$message({ message, type: 'error' })
-          this.loading = false
-        }
-      })
-      // }
+        })
+      }
     },
     showGuide() {
       // console.log('show fuide')
