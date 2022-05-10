@@ -46,7 +46,7 @@
         </template>
       </el-table-column>
     </el-table>
-    <pagination :total="0" />
+    <pagination v-show="total > 0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.pageSize" @pagination="getList" />
   </div>
 </template>
 
@@ -65,7 +65,8 @@ export default {
       listQuery: {}, // 查询图书得查询条件
       showCover: false, // 是否展示封面列
       categoryList: [], // 图书分类
-      list: [] // 按输入条件查询图书返回的图书列表
+      list: [], // 按输入条件查询图书返回的图书列表
+      total: 0 // 按条件查询得出的总条数
     }
   },
   created() {
@@ -114,8 +115,9 @@ export default {
       this.listLoading = true
       // 按输入条件查询图书
       listBook(this.listQuery).then(response => {
-        const { list } = response.data
+        const { list, count } = response.data
         this.list = list
+        this.total = count
         this.listLoading = false
         // 对查询中匹配的内容高亮显示
         this.list.forEach(book => {
