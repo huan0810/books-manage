@@ -63,6 +63,7 @@
       <el-table-column align="center" width="120" label="操作" fixed="right">
         <template slot-scope="{ row }">
           <el-button type="text" icon="el-icon-edit" @click="handleUpdate(row)" />
+          <el-button type="text" icon="el-icon-delete" style="color: #f56c6c" @click="handleDelete(row)" />
         </template>
       </el-table-column>
     </el-table>
@@ -73,7 +74,7 @@
 <script>
 import Pagination from '../../components/Pagination'
 import waves from '@/directive/waves/waves'
-import { getCategory, listBook } from '../../api/book'
+import { getCategory, listBook, deleteBook } from '../../api/book'
 import { parseTime } from '@/utils'
 
 export default {
@@ -163,6 +164,25 @@ export default {
     handleUpdate(row) {
       console.log('handleUpdate', row)
       this.$router.push(`/book/edit/${row.fileName}`)
+    },
+    handleDelete(row) {
+      // 删除电子书前,先弹出提示框
+      this.$confirm('此操作将永久删除该电子书,是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        // 点击确定,执行then,在这里删除电子书
+        deleteBook(row.fileName).then(response => {
+          this.$notify({
+            title: '成功',
+            message: response.msg || '删除成功',
+            type: 'success',
+            duration: 2000
+          })
+          this.handleFilter()
+        })
+      })
     },
     changeShowCover(value) {
       this.showCover = value
