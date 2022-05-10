@@ -26,3 +26,20 @@ export function getBook(fileName) {
     params: { fileName }
   })
 }
+
+// 获取电子书所有分类
+export function getCategory() {
+  return request({
+    url: '/book/category',
+    method: 'get'
+  })
+}
+
+// 按输入条件查询图书
+export function listBook(params) {
+  return request({
+    url: '/book/list',
+    method: 'get',
+    params
+  })
+}
