@@ -5,14 +5,14 @@
       <el-input v-model="listQuery.title" placeholder="书名" style="width: 200px" class="filter-item" clearable @keyup.enter.native="handleFilter" @clear="handleFilter" @blur="handleFilter" />
       <el-input v-model="listQuery.author" placeholder="作者" style="width: 200px" class="filter-item" clearable @keyup.enter.native="handleFilter" @clear="handleFilter" @blur="handleFilter" />
       <el-select v-model="listQuery.category" placeholder="分类" clearable class="filter-item" @change="handleFilter">
-        <el-option v-for="item in categoryList" :key="item.value" :label="item.label + '(' + item.num + ')'" :value="item.value" />
+        <el-option v-for="item in categoryList" :key="item.value" :label="item.label + '(' + item.num + ')'" :value="item.label" />
       </el-select>
       <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" style="margin-left: 10px" @click="handleFilter">查询</el-button>
       <el-button class="filter-item" type="primary" icon="el-icon-edit" style="margin-left: 5px" @click="handleCreate">新增</el-button>
       <el-checkbox v-model="showCover" class="filter-item" style="margin-left: 5px" @change="changeShowCover">显示封面</el-checkbox>
     </div>
     <!-- 表格 -->
-    <el-table :key="tableKey" v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%" @sort-change="sortChange">
+    <el-table :key="tableKey" v-loading="listLoading" :data="list" border fit highlight-current-row style="width: 100%" :default-sort="defaultSort" @sort-change="sortChange">
       <el-table-column width="80" align="center" sortable="custom" prop="id" label="ID" />
       <el-table-column width="150" align="center" label="书名">
         <template slot-scope="{ row: { titleWrapper }}">
@@ -67,7 +67,7 @@
         </template>
       </el-table-column>
     </el-table>
-    <pagination v-show="total > 0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.pageSize" @pagination="getList" />
+    <pagination v-show="total > 0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.pageSize" @pagination="refresh" />
   </div>
 </template>
 
@@ -89,11 +89,12 @@ export default {
     return {
       tableKey: 0,
       listLoading: true,
-      listQuery: {}, // 查询图书得查询条件
+      listQuery: {}, // 查询图书的查询条件
       showCover: false, // 是否展示封面列
       categoryList: [], // 图书分类
       list: [], // 按输入条件查询图书返回的图书列表
-      total: 0 // 按条件查询得出的总条数
+      total: 0, // 按条件查询得出的总条数
+      defaultSort: {} // 表示按哪个字段排序,升序or降序
     }
   },
   created() {
@@ -103,14 +104,41 @@ export default {
     this.getList()
     this.getCategoryList()
   },
+  // url查询参数变化时,列表没有更新,所以添加一个钩子函数,监听查询字符串的变化
+  beforeRouteUpdate(to, from, next) {
+    if (to.path === from.path) {
+      const newQuery = Object.assign({}, to.query)
+      const oldQuery = Object.assign({}, from.query)
+      if (JSON.stringify(newQuery) !== JSON.stringify(oldQuery)) {
+        // 参数不一样时, 就调用按条件查询电子书的接口
+        this.getList()
+      }
+    }
+    next()
+  },
   methods: {
     parseQuery() {
+      // 为了刷新页面时，查询条件不丢失,要获取url地址后面的查询字符串
+      const query = Object.assign({}, this.$route.query)
+      let sort = '+id'
       const listQuery = {
         page: 1,
         pageSize: 20,
-        sort: '+id'
+        sort
       }
-      this.listQuery = { ...listQuery, ...this.listQuery }
+      if (query) {
+        query.page && (query.page = +query.page)
+        query.pageSize && (query.pageSize = +query.pageSize)
+        query.sort && (sort = query.sort)
+      }
+      const sortSymbol = sort[0]
+      const sortColumn = sort.slice(1)
+      this.defaultSort = {
+        prop: sortColumn,
+        order: sortSymbol === '+' ? 'ascending' : 'descending'
+      }
+      this.listQuery = { ...listQuery, ...query }
+      console.log(this.listQuery)
     },
     sortChange(data) {
       console.log('sortChange', data)
@@ -153,10 +181,18 @@ export default {
         })
       })
     },
+    refresh() {
+      this.$router.push({
+        path: '/book/list',
+        query: this.listQuery
+      })
+    },
     // 图书列表按条件查询
     handleFilter() {
       console.log('handleFilter', this.listQuery)
-      this.getList()
+      this.listQuery.page = 1 // 每次调用查询条件,都重置页码
+      // 输入查询条件时,要自动给url加上查询字符串,以便于刷新时查询条件不丢失
+      this.refresh()
     },
     handleCreate() {
       this.$router.push('/book/create')
