@@ -37,27 +37,13 @@ export const constantRoutes = [
     path: '/401',
     component: () => import('@/views/error-page/401'),
     hidden: true
-  },
-  {
-    path: '/',
-    component: Layout,
-    redirect: '/dashboard',
-    children: [
-      {
-        path: 'dashboard',
-        component: () => import('@/views/dashboard/index'),
-        name: 'Dashboard',
-        // affix: true 表示Dashboard标签始终附着在tags-view上
-        meta: { title: 'Dashboard', icon: 'dashboard', affix: true }
-      }
-    ]
   }
 ]
 
 export const asyncRoutes = [
   // 控制某些选项只能图书管理员才能访问
   {
-    path: '/book',
+    path: '/',
     name: 'book',
     component: Layout,
     redirect: '/book/create',

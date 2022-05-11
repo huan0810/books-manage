@@ -216,7 +216,7 @@ export default {
             type: 'success',
             duration: 2000
           })
-          this.handleFilter()
+          this.getList()
         })
       })
     },
