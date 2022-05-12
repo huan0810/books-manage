@@ -4,7 +4,6 @@
   <el-form ref="postForm" :model="postForm" :rules="rules">
     <!-- sticky实现吸顶效果 -->
     <sticky :class-name="'sub-navbar'">
-      <el-button v-if="!isEdit" @click="showGuide">显示帮助</el-button>
       <el-button v-loading="loading" type="success" style="margin-left: 10px" @click="submitForm">{{ isEdit ? '编辑电子书' : '新增电子书' }}</el-button>
     </sticky>
 
@@ -256,9 +255,6 @@ export default {
           }
         })
       }
-    },
-    showGuide() {
-      // console.log('show fuide')
     }
   }
 }
