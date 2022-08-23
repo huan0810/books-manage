@@ -161,7 +161,7 @@ export default {
     },
     onContentClick(data) {
       // console.log(data)
-      window.open(data.text)
+      window.open(data.text) // 打开章节对应内容
     },
     setData(data) {
       // 更新postForm表单数据
